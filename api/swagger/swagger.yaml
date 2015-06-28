@@ -1,0 +1,76 @@
+swagger: "2.0"
+info:
+  version: "0.0.1"
+  title: CSV to GEOJSON API
+# during dev, should point to your local machine
+host: localhost:10010
+# basePath prefixes all resource paths 
+basePath: /
+# 
+schemes:
+  # tip: remove http to make production-grade
+  - http
+  - https
+# format of bodies a client can send (Content-Type)
+consumes:
+  - application/json
+# format of the responses to the client (Accepts)
+produces:
+  - application/json
+paths:
+  /convert:
+    # binds a127 app logic to a route
+    x-swagger-router-controller: convert
+    post:
+      description: CSVをgeojsonに変換する
+      # used as the method name of the controller
+      operationId: convert
+      parameters:
+        - name: url
+          in: formData
+          description: CSVファイルのURL
+          required: true
+          type: string
+        - name: latfield
+          in: formData
+          description: CSV中の緯度のヘッダ名
+          required: true
+          type: string
+        - name: lngfield
+          in: formData
+          description: CSV中の経度のヘッダ名
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: object
+            items:
+              # a pointer to a definition
+              $ref: "#/definitions/ConvertResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+# complex objects have schema definitions
+definitions:
+  ConvertResponse:
+    required:
+      - url
+      - latfield
+      - lngfield
+    properties:
+      url:
+        type: string
+      latfield:
+        type: string
+      lngfield:
+        type: string
+  ErrorResponse:
+    required:
+      - message
+    properties:
+      message:
+        type: string

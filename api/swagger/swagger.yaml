@@ -58,7 +58,7 @@ paths:
     # binds a127 app logic to a route
     x-swagger-router-controller: github
     get:
-      description: CSVをgeojsonにしてGitHubにPRする
+      description: GitHub APIのテスト用
       # used as the method name of the controller
       operationId: github
       parameters:
@@ -95,6 +95,44 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+  "/github/push/{username}/{usertype}":
+    # binds a127 app logic to a route
+    # controller/ に置くJS名を指定する
+    x-swagger-router-controller: github
+    get:
+      description: Path階層化のテスト
+      # used as the method name of the controller
+      # module.exportsで定義するメソッドのキーを指定する
+      operationId: githubPush
+      parameters:
+        - name: username
+          in: path
+          description: dummy
+          required: true
+          type: string
+        - name: usertype
+          in: path
+          description: dummy
+          required: true
+          type: string
+        - name: name
+          in: query
+          description: dummy
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: object
+            items:
+              # a pointer to a definition
+              $ref: "#/definitions/GitHubPushResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
 # complex objects have schema definitions
 definitions:
   ConvertResponse:
@@ -121,6 +159,13 @@ definitions:
     #    type: string
     #  lngfield:
     #    type: string
+  GitHubPushResponse:
+    type: object
+    properties:
+      username:
+        type: string
+      usertype:
+        type: string
   ErrorResponse:
     required:
       - message

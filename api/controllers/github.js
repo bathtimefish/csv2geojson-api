@@ -28,7 +28,8 @@ var githubApi = require('github');
   we specify that in the exports of this module that 'hello' maps to the function named 'hello'
  */
 module.exports = {
-  github: github
+  github: github,
+  githubPush: github_push
 };
 
 /*
@@ -92,4 +93,14 @@ function github(req, res) {
     */
 
     res.json({"hoge":"fuga"});
+}
+
+function github_push(req, res) {
+    var username = req.swagger.params.username.value;
+    var usertype = req.swagger.params.usertype.value;
+    var data = {
+        "username": username,
+        "usertype": usertype
+    };
+    res.json(data);
 }

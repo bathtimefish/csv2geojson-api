@@ -15,5 +15,5 @@ $ swagger project edit
 Open other terminal window
 
 ```
-$ swagger project start
+$ GITHUB_USERNAME=[your github username] GITHUB_PASSWORD=[your github password] swagger project start
 ```

@@ -54,6 +54,57 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+  "/convert/github/push/{repo}":
+    # binds a127 app logic to a route
+    x-swagger-router-controller: convert
+    put:
+      description: CSVをgeojsonに変換してgithubにpushする
+      # used as the method name of the controller
+      operationId: githubPush
+      parameters:
+        - name: repo
+          in: path
+          description: リポジトリ名
+          required: true
+          type: string
+        - name: branch
+          in: formData
+          description: ブランチ名(省略時はdefalut branch)
+          required: false
+          type: string
+        - name: url
+          in: formData
+          description: CSVファイルのURL
+          required: true
+          type: string
+        - name: latfield
+          in: formData
+          description: CSV中の緯度のヘッダ名
+          required: true
+          type: string
+        - name: lngfield
+          in: formData
+          description: CSV中の経度のヘッダ名
+          required: true
+          type: string
+        - name: name
+          in: formData
+          description: geojsonファイル名
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: object
+            items:
+              # a pointer to a definition
+              $ref: "#/definitions/ConvertResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /github:
     # binds a127 app logic to a route
     x-swagger-router-controller: github

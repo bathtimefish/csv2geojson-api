@@ -96,9 +96,21 @@ function github_push(req, res) {
                 repo: repo,
                 path: name,
                 message: "add " + name,
+                branch: branch,
                 content: base64.encode(JSON.stringify(geoJson)),
             };
             result = yield _createFile(options);
+        } else {
+            var options = {
+                user: process.env.GITHUB_USERNAME,
+                repo: repo,
+                path: name,
+                message: "update " + name,
+                branch: branch,
+                content: base64.encode(JSON.stringify(geoJson)),
+                sha: exists.sha
+            }
+            result = yield _updateFile(options);
         }
 
         res.json(result);
@@ -191,6 +203,27 @@ function _createFile(options) {
             password: process.env.GITHUB_PASSWORD
         });
         github.repos.createFile(options, function(err, res) {
+            if(err) {
+                reject(err);
+                return false;
+            }
+            resolve(res);
+        });
+    });
+}
+
+/**
+ * リポジトリの対象ファイルを更新する
+ */
+function _updateFile(options) {
+    return new Promise(function(resolve, reject) {
+        var github = new githubApi({"version":"3.0.0"});
+        github.authenticate({
+            type: "basic",
+            username: process.env.GITHUB_USERNAME,
+            password: process.env.GITHUB_PASSWORD
+        });
+        github.repos.updateFile(options, function(err, res) {
             if(err) {
                 reject(err);
                 return false;

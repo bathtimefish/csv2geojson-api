@@ -15,6 +15,7 @@ var request = require('request');
 var csv2geojson = require('csv2geojson');
 var githubApi = require('github');
 var base64 = require('js-base64').Base64;
+var co = require('co');
 
 /*
  Once you 'require' a module you can reference the things that it exports.  These are defined in module.exports.
@@ -60,50 +61,53 @@ function convert(req, res) {
 }
 
 function github_push(req, res) {
-    var repo = req.swagger.params.repo.value;
-    var branch = req.swagger.params.branch.value || 'master';
-    var url = req.swagger.params.url.value;
-    var latField = req.swagger.params.latfield.value;
-    var lngField = req.swagger.params.lngfield.value;
-    var name = req.swagger.params.name.value;
-    // リポジトリに同名ファイルがあるか調べる
-    var options = {
-        user: process.env.GITHUB_USERNAME,
-        repo: repo,
-        branch: branch,
-        name: name
-    };
-    _isContentExists(options).then(function(exists) {
-        if(exists) {
-            console.error("file exists in repository");
-            return false;
-        } else {
-            // CSVを受信してgeojsonに変換する
-            var csvOptions = {
-                url: url,
-                latField: latField,
-                lngField: lngField
-            };
-            return _convetGeoJson(csvOptions);
-        }
-    }).then(function(data) {
-        if(data) {
+    co(function* () {
+
+        'use strict';
+        var repo = req.swagger.params.repo.value;
+        var branch = req.swagger.params.branch.value || 'master';
+        var url = req.swagger.params.url.value;
+        var latField = req.swagger.params.latfield.value;
+        var lngField = req.swagger.params.lngfield.value;
+        var name = req.swagger.params.name.value;
+
+        // CSVを受信してgeojsonに変換する
+        var csvOptions = {
+            url: url,
+            latField: latField,
+            lngField: lngField
+        };
+        var geoJson = yield _convetGeoJson(csvOptions);
+
+        // リポジトリに同名ファイルがあるか調べる
+        var options = {
+            user: process.env.GITHUB_USERNAME,
+            repo: repo,
+            branch: branch,
+            name: name
+        };
+        var exists = yield _isContentExists(options);
+
+        var result = {};
+        if(!exists) {
+            // GitHubにファイルを作成する
             var options = {
                 user: process.env.GITHUB_USERNAME,
                 repo: repo,
                 path: name,
                 message: "add " + name,
-                content: base64.encode(JSON.stringify(data)),
+                content: base64.encode(JSON.stringify(geoJson)),
             };
-            return _createFile(options);
-        } else {
-            return {"error": true};
+            result = yield _createFile(options);
         }
-    }).then(function(data) {
-        res.json(data);
-    }).catch(function(err) {
-        res.json(err);
-    });
+
+        res.json(result);
+
+    }.bind(this)).catch(function(err) {
+        console.log('!!! Catch Errors in co');
+        console.log(err);
+        res.json({'success': false, 'error': 'Internal server error'});
+    }.bind(this));
 }
 
 /**
@@ -165,7 +169,7 @@ function _isContentExists(options) {
                 for(var i=0; i<res.tree.length; i++) {
                     var regx = new RegExp(treeOptions.name, "i");
                     if(regx.test(res.tree[i].path)) {
-                        exists = true;
+                        exists = res.tree[i];
                         break;
                     }
                 }

@@ -32,7 +32,7 @@ CSVをgeojsonに変換して指定したリポジトリにcommitする `/convert
 
 API仕様の詳細は [Swagger Editor](http://editor.swagger.io/#/) に [./api/swagger/swagger.yaml](https://raw.githubusercontent.com/bathtimefish/csv2geojson-api/master/api/swagger/swagger.yaml) を読み込んで確認してください。
 
-# LICENCE
+# LICENSE
 
 MIT
 

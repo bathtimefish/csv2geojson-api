@@ -34,7 +34,8 @@ module.exports = {
   githubPush: github_push
 };
 
-
+// global val of github login
+var github;
 
 /*
   Functions in a127 controllers used for operations should take two parameters:
@@ -70,7 +71,6 @@ function convert(req, res) {
 
 function github_push(req, res) {
     co(function* () {
-
         'use strict';
         var repo = req.swagger.params.repo.value;
         var branch = req.swagger.params.branch.value || 'master';
@@ -78,6 +78,14 @@ function github_push(req, res) {
         var latField = req.swagger.params.latfield.value;
         var lngField = req.swagger.params.lngfield.value;
         var name = req.swagger.params.name.value;
+
+        // github login
+        github = new githubApi({"version":"3.0.0"});
+        github.authenticate({
+            type: "basic",
+            username: process.env.GITHUB_USERNAME,
+            password: process.env.GITHUB_PASSWORD
+        });
 
         // CSVを受信してgeojsonに変換する
         var csvOptions = {
@@ -182,12 +190,6 @@ function _convetGeoJson(options) {
  */
 function _isContentExists(options) {
     return new Promise(function(resolve, reject) {
-        var github = new githubApi({"version":"3.0.0"});
-        github.authenticate({
-            type: "basic",
-            username: process.env.GITHUB_USERNAME,
-            password: process.env.GITHUB_PASSWORD
-        });
         github.repos.getBranch(options, function(err, res) {
             if(err) {
                 reject(err);
@@ -224,12 +226,6 @@ function _isContentExists(options) {
  */
 function _createFile(options) {
     return new Promise(function(resolve, reject) {
-        var github = new githubApi({"version":"3.0.0"});
-        github.authenticate({
-            type: "basic",
-            username: process.env.GITHUB_USERNAME,
-            password: process.env.GITHUB_PASSWORD
-        });
         github.repos.createFile(options, function(err, res) {
             if(err) {
                 reject(err);
@@ -245,12 +241,6 @@ function _createFile(options) {
  */
 function _updateFile(options) {
     return new Promise(function(resolve, reject) {
-        var github = new githubApi({"version":"3.0.0"});
-        github.authenticate({
-            type: "basic",
-            username: process.env.GITHUB_USERNAME,
-            password: process.env.GITHUB_PASSWORD
-        });
         github.repos.updateFile(options, function(err, res) {
             if(err) {
                 reject(err);

@@ -43,21 +43,29 @@ module.exports = {
   Param 2: a handle to the response object
  */
 function convert(req, res) {
-    // variables defined in the Swagger document can be referenced using req.swagger.params.{parameter_name};
-    var url = req.swagger.params.url.value;
-    var latField = req.swagger.params.latfield.value;
-    var lngField = req.swagger.params.lngfield.value;
-    // CSVを受信してgeojsonに変換する
-    var option = {
-        url: url,
-        latField: latField,
-        lngField: lngField
-    };
-    _convetGeoJson(option).then(function(data) {
-        res.json(data);
-    }).catch(function(err) {
-        res.json(err);
-    });
+    co(function* () {
+        'use strict';
+        // variables defined in the Swagger document can be referenced using req.swagger.params.{parameter_name};
+        var url = req.swagger.params.url.value;
+        var latField = req.swagger.params.latfield.value;
+        var lngField = req.swagger.params.lngfield.value;
+        // CSVを受信してgeojsonに変換する
+        var csvOptions = {
+            url: url,
+            latField: latField,
+            lngField: lngField
+        };
+        var geoJson = yield _convetGeoJson(csvOptions);
+        if(geoJson.success) {
+            res.json(geoJson.data);
+        } else {
+            res.json(geoJson);
+        }
+    }.bind(this)).catch(function(err) {
+        console.log('!!! Catch Errors in co');
+        console.log(err);
+        res.json({'success': false, 'error': 'Internal server error'});
+    }.bind(this));
 }
 
 function github_push(req, res) {
@@ -78,6 +86,10 @@ function github_push(req, res) {
             lngField: lngField
         };
         var geoJson = yield _convetGeoJson(csvOptions);
+        if(!geoJson.success) {
+            res.json(geoJson);
+            return false;
+        }
 
         // リポジトリに同名ファイルがあるか調べる
         var options = {
@@ -97,7 +109,7 @@ function github_push(req, res) {
                 path: name,
                 message: "add " + name,
                 branch: branch,
-                content: base64.encode(JSON.stringify(geoJson)),
+                content: base64.encode(JSON.stringify(geoJson.data)),
             };
             result = yield _createFile(options);
         } else {
@@ -107,7 +119,7 @@ function github_push(req, res) {
                 path: name,
                 message: "update " + name,
                 branch: branch,
-                content: base64.encode(JSON.stringify(geoJson)),
+                content: base64.encode(JSON.stringify(geoJson.data)),
                 sha: exists.sha
             }
             result = yield _updateFile(options);
@@ -139,11 +151,27 @@ function _convetGeoJson(options) {
                 delimiter: ','
             };
             csv2geojson.csv2geojson(csvString, options, function(err, data) {
-                if(!err){
-                    resolve(data);
+                var ret = {};
+                if(err){
+                    ret = {
+                        'success': false,
+                        'errors': err
+                    }
                 } else {
-                    reject(err);
+                    if(data.features.length === 0) {
+                        ret = {
+                            'success': false,
+                            'errors': [{'message': 'geoJson feature is empty'}]
+                        }
+                    } else {
+                        ret = {
+                            'success': true,
+                            'errors': [],
+                            'data': data
+                        }
+                    }
                 }
+                resolve(ret);
             });
         });
     });
